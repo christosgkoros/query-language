@@ -1,0 +1,359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "id": "https://christosgkoros.com/json/query-language/v0.1.0",
+  "components": {
+    "schemas": {
+      "Query": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/Condition" },
+          {
+            "type": "object",
+            "properties": {
+              "$and": {
+                "type": "array",
+                "description": "A list of conditions that all must be true.",
+                "items": { "$ref": "#/components/schemas/Query" }
+              },
+              "$or": {
+                "type": "array",
+                "description": "A list of conditions where at least one must be true.",
+                "items": { "$ref": "#/components/schemas/Query" }
+              },
+              "$not": {
+                "description": "Negates a condition.",
+                "$ref": "#/components/schemas/Query"
+              }
+            },
+            "additionalProperties": false
+          }
+        ],
+        "examples": {
+          "simpleAnd": {
+            "$and": [
+              { "name": { "$eq": "Alice" } },
+              { "age": { "$eq": 30 } }
+            ]
+          },
+          "andOr": {
+            "$and": [
+              { "department": { "$eq": "sales" } },
+              {
+                "$or": [
+                  { "role": { "$eq": "admin" } },
+                  { "role": { "$eq": "manager" } }
+                ]
+              }
+            ]
+          },
+          "complexQuery": {
+            "$and": [
+              { "name": { "$eq": "Charlie" } },
+              {
+                "$or": [
+                  { "$not": { "status": { "$eq": "inactive" } } },
+                  { "role": { "$eq": "supervisor" } }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "Condition": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/equalCondition" },
+          { "$ref": "#/components/schemas/notEqualCondition" },
+          { "$ref": "#/components/schemas/inArrayCondition" },
+          { "$ref": "#/components/schemas/notInArrayCondition" },
+          { "$ref": "#/components/schemas/likeCondition" },
+          { "$ref": "#/components/schemas/notLikeCondition" },
+          { "$ref": "#/components/schemas/rangeCondition" },
+          { "$ref": "#/components/schemas/isNullCondition" }
+        ]
+      },
+      "equalCondition": {
+        "type": "object",
+        "description": "Matches when a field equals a value.",
+        "patternProperties": {
+          "^.*$": {
+            "type": "object",
+            "properties": {
+              "$eq": {
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "boolean" },
+                  { "type": "number" }
+                ],
+                "description": "The value to match."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "examples": {
+          "eqString": {
+            "name": { "$eq": "John Doe" }
+          },
+          "eqBoolean": {
+            "active": { "$eq": true }
+          },
+          "eqNumber": {
+            "age": { "$eq": 30 }
+          }
+        }
+      },
+      "notEqualCondition": {
+        "type": "object",
+        "description": "Matches when a field does not equal a value.",
+        "patternProperties": {
+          "^.*$": {
+            "type": "object",
+            "properties": {
+              "$ne": {
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "boolean" },
+                  { "type": "number" }
+                ],
+                "description": "The value to avoid."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "examples": {
+          "neString": {
+            "name": { "$ne": "John Doe" }
+          },
+          "neBoolean": {
+            "active": { "$ne": true }
+          },
+          "neNumber": {
+            "age": { "$ne": 30 }
+          }
+        }
+      },
+      "inArrayCondition": {
+        "type": "object",
+        "description": "Matches when a field is found in an array.",
+        "patternProperties": {
+          "^.*$": {
+            "type": "object",
+            "properties": {
+              "$in": {
+                "type": "array",
+                "description": "List of possible values.",
+                "items": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "number" }
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "examples": {
+          "inString": {
+            "color": {
+              "$in": [
+                "red",
+                "green",
+                "blue"
+              ]
+            }
+          },
+          "inNumber": {
+            "rating": {
+              "$in": [1, 2, 3, 4, 5]
+            }
+          }
+        }
+      },
+      "notInArrayCondition": {
+        "type": "object",
+        "description": "Matches when a field is not found in an array.",
+        "patternProperties": {
+          "^.*$": {
+            "type": "object",
+            "properties": {
+              "$nin": {
+                "type": "array",
+                "description": "List of values to exclude.",
+                "items": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "number" }
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "examples": {
+          "notInString": {
+            "color": {
+              "$nin": [
+                "red",
+                "green",
+                "blue"
+              ]
+            }
+          },
+          "notInNumber": {
+            "rating": {
+              "$nin": [1, 2, 3, 4, 5]
+            }
+          }
+        }
+      },
+      "likeCondition": {
+        "type": "object",
+        "description": "Matches when a field follows a pattern.",
+        "patternProperties": {
+          "^.*$": {
+            "type": "object",
+            "properties": {
+              "$like": {
+                "type": "string",
+                "description": "A SQL-like pattern.",
+                "regex": "['\"%?.+%?['\"]"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "description": {
+            "$like": "%urgent%"
+          }
+        }
+      },
+      "notLikeCondition": {
+        "type": "object",
+        "description": "Matches when a field does not follow a pattern.",
+        "patternProperties": {
+          "^.*$": {
+            "type": "object",
+            "properties": {
+              "$nlike": {
+                "type": "string",
+                "regex": "['\"%?.+%?['\"]",
+                "description": "A SQL-like pattern to avoid."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "description": {
+            "$nlike": "%urgent%"
+          }
+        }
+      },
+      "rangeCondition": {
+        "type": "object",
+        "description": "Matches when a field meets range criteria.",
+        "patternProperties": {
+          "^.*$": {
+            "type": "object",
+            "properties": {
+              "$gt": {
+                "oneOf": [
+                  { "type": "string", "format": "date" },
+                  { "type": "number" }
+                ],
+                "description": "Greater than."
+              },
+              "$lt": {
+                "oneOf": [
+                  { "type": "string", "format": "date" },
+                  { "type": "number" }
+                ],
+                "description": "Less than."
+              },
+              "$gte": {
+                "oneOf": [
+                  { "type": "string", "format": "date" },
+                  { "type": "number" }
+                ],
+                "description": "Greater than or equal to."
+              },
+              "$lte": {
+                "oneOf": [
+                  { "type": "string", "format": "date" },
+                  { "type": "number" }
+                ],
+                "description": "Less than or equal to."
+              },
+              "$between": {
+                "type": "array",
+                "description": "Between two values (inclusive).",
+                "items": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "number" }
+                  ]
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "examples": {
+          "gt": {
+            "price": { "$gt": 50 }
+          },
+          "lt": {
+            "price": { "$lt": 100 }
+          },
+          "gte": {
+            "createdAt": { "$gte": "2023-01-01" }
+          },
+          "lte": {
+            "createdAt": { "$lte": "2023-12-31" }
+          },
+          "score": {
+            "$between": [10, 20]
+          }
+        }
+      },
+      "isNullCondition": {
+        "type": "object",
+        "description": "Matches when a field is null or not null.",
+        "patternProperties": {
+          "^.*$": {
+            "type": "object",
+            "properties": {
+              "$isnull": {
+                "type": "boolean",
+                "enum": [true, false],
+                "description": "Set to true to check for null."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "examples": {
+          "null": {
+            "middleName": { "$isnull": true }
+          },
+          "notNull": {
+            "lastName": { "$isnull": false }
+          }
+        }
+      }
+    }
+  }
+}
